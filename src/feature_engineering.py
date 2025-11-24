@@ -56,5 +56,5 @@ if __name__ == "__main__":
 
     df = pd.read_csv("data/processed/nhl_shots_cleaned.csv")
     df = add_features(df)
-    df.to_csv("data/processed/nhl_shots_features.csv", index=False)
+    df.to_csv("data/processed/nhl_shots_cleaned_features.csv", index=False)
     print("Feature engineering complete.")
