@@ -1,4 +1,5 @@
 import pandas as pd
+from pathlib import Path
 
 
 def _add_empty_net_feature(df: pd.DataFrame) -> pd.DataFrame:
@@ -52,9 +53,26 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    import pandas as pd
+    SCRIPT_DIR = Path(__file__).resolve().parent  # src
+    PROJECT_ROOT = SCRIPT_DIR.parent  # xG_model
+    # Path to your raw CSV
+    clean_path = PROJECT_ROOT / "data/processed/nhl_shots_cleaned.csv"
+    clean_features_path = PROJECT_ROOT / "data/processed/nhl_shots_cleaned_features.csv"
 
-    df = pd.read_csv("data/processed/nhl_shots_cleaned.csv")
-    df = add_features(df)
-    df.to_csv("data/processed/nhl_shots_cleaned_features.csv", index=False)
-    print("Feature engineering complete.")
+    # Load clean data
+    df_clean = pd.read_csv(clean_path)
+
+    # Add features
+    df_clean_features = add_features(df_clean)
+
+    # Save to processed folder
+    clean_features_path.parent.mkdir(
+        parents=True, exist_ok=True
+    )  # ensure folder exists
+    df_clean_features.to_csv(clean_features_path, index=False)
+    print(f" Added features to clean data and saved to {clean_features_path}")
+
+    # df = pd.read_csv("data/processed/nhl_shots_cleaned.csv")
+    # df = add_features(df)
+    # df.to_csv("data/processed/nhl_shots_cleaned_features.csv", index=False)
+    # print("Feature engineering complete.")

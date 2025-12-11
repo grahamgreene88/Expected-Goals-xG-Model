@@ -33,6 +33,7 @@ def _remove_shootout_shots(df: pd.DataFrame) -> pd.DataFrame:
 
 def _drop_redundant_columns(df: pd.DataFrame) -> pd.DataFrame:
     cols_to_drop = [
+        # Drop redundant columns
         "x_coord_raw",
         "y_coord_raw",
         "strength_state",
@@ -44,6 +45,15 @@ def _drop_redundant_columns(df: pd.DataFrame) -> pd.DataFrame:
         "score_differential",
         "is_rebound",
         "is_rush_shot",
+        # Remove unused cols for now
+        "game_id",
+        "event_id",
+        "sort_order",
+        "shooter_id",
+        "goalie_id",
+        "team_id",
+        "shooter_team_abbrev",
+        "opponent_team_abbrev",
     ]
     return df.drop(columns=[c for c in cols_to_drop if c in df.columns])
 
@@ -76,9 +86,11 @@ def clean_shot_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
+    SCRIPT_DIR = Path(__file__).resolve().parent  # src
+    PROJECT_ROOT = SCRIPT_DIR.parent  # xG_model
     # Path to your raw CSV
-    raw_path = Path("data/raw/nhl_shots_2019_2024.csv")
-    processed_path = Path("data/processed/nhl_shots_cleaned.csv")
+    raw_path = PROJECT_ROOT / "data/raw/nhl_shots_2019_2024.csv"
+    processed_path = PROJECT_ROOT / "data/processed/nhl_shots_cleaned.csv"
 
     # Load raw data
     df_raw = pd.read_csv(raw_path)
