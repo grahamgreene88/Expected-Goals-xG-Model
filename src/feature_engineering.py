@@ -40,6 +40,7 @@ def _add_empty_net_feature(df: pd.DataFrame) -> pd.DataFrame:
 #     # TODO: implement actual time delta
 #     df["time_since_last_shot"] = np.nan
 #     return df
+#
 
 
 def add_features(df: pd.DataFrame) -> pd.DataFrame:

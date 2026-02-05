@@ -86,6 +86,7 @@ def clean_shot_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
+
     SCRIPT_DIR = Path(__file__).resolve().parent  # src
     PROJECT_ROOT = SCRIPT_DIR.parent  # xG_model
     # Path to your raw CSV
