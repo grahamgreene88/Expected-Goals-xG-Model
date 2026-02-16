@@ -44,7 +44,14 @@ def _add_empty_net_feature(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def add_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Run all feature engineering steps on the input dataframe."""
+    """Adds features to be used in modeling by calling helper functions.
+
+    Args:
+        df (pd.DataFrame): Cleaned df.
+
+    Returns:
+        pd.DataFrame: Df with features added.
+    """
     df = df.copy()
     df = _add_empty_net_feature(df)
     # df = _add_shot_distance(df)

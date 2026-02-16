@@ -54,6 +54,9 @@ def _drop_redundant_columns(df: pd.DataFrame) -> pd.DataFrame:
         "team_id",
         "shooter_team_abbrev",
         "opponent_team_abbrev",
+        # Remove cols that leak outcome information
+        "event_type",
+        "miss_reason",
     ]
     return df.drop(columns=[c for c in cols_to_drop if c in df.columns])
 
@@ -76,6 +79,19 @@ def _convert_bool_columns_to_binary(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def clean_shot_data(df: pd.DataFrame) -> pd.DataFrame:
+    """Calls helper functions to clean shot data:
+    - _clean_miss_reason: Fill miss_reason='on net' only for SOG or goal-type events missing miss_reason.
+    - _clean_time_columns: Convert MM:SS to seconds and handle period-type length differences (REG/OT).
+    - _remove_shootout_shots: Remvoe shots that were taken during a shootout.
+    - _convert_bool_columns_to_binary: Convert boolean columns into binary.
+    - _drop_redundant_columns: Removed columns not to be used in the model.
+
+    Args:
+        df (pd.DataFrame): Raw shot df.
+
+    Returns:
+        pd.DataFrame: Cleaned shot df.
+    """
     df = df.copy()
     df = _clean_miss_reason(df)
     df = _clean_time_columns(df)
