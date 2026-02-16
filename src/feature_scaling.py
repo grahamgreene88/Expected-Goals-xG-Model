@@ -6,6 +6,11 @@ from pathlib import Path
 import joblib
 import os
 
+# Always resolve paths relative to project root, not cwd
+PROJECT_ROOT = Path(__file__).resolve().parents[1]  # xG_model
+DATA_DIR = PROJECT_ROOT / "data"
+TRANSFORMER_DIR = PROJECT_ROOT / "models/scalers"
+
 
 # Utility functions for saving and loading transformers
 def _save_transformer(obj, name: str):
@@ -36,7 +41,7 @@ def _transform_skewed_features(
     # Ensure directory exists
     os.makedirs(TRANSFORMER_DIR, exist_ok=True)
 
-    for col in skewed_cols:
+    for col in skewed_features:
 
         transformer_path = os.path.join(TRANSFORMER_DIR, f"skew_{col}.joblib")
 
@@ -98,7 +103,7 @@ def _encode_categorical_features(
     High-cardinality features are intentionally excluded.
     """
     df = df.copy()
-    if not categorical_cols:
+    if not cat_cols:
         return df
 
     encoder_name = "linear_ohe"
@@ -155,10 +160,13 @@ def scale_features(
         df = _scale_numeric_features(df, numeric_cols, for_training=for_training)
 
     # 3) Categorical encoding for linear models
-    if linear_model and categorical_cols:
-        df = _encode_categorical_features(
-            df, categorical_cols, for_training=for_training
-        )
+    if linear_model and cat_cols:
+        df = _encode_categorical_features(df, cat_cols, for_training=for_training)
+
+    # 4) Convert categorical columns to "category" data type for tree models
+    if not linear_model and cat_cols:
+        for col in cat_cols:
+            df[col] = df[col].astype("category")
 
     return df
 
@@ -190,11 +198,6 @@ def scale_features(
 
 
 if __name__ == "__main__":
-
-    # Always resolve paths relative to project root, not cwd
-    PROJECT_ROOT = Path(__file__).resolve().parents[1]  # xG_model
-    DATA_DIR = PROJECT_ROOT / "data"
-    TRANSFORMER_DIR = PROJECT_ROOT / "models/scalers"
 
     # Path to your raw CSV
     in_path = DATA_DIR / "processed/nhl_shots_cleaned_features.csv"

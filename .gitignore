@@ -2,3 +2,6 @@
 data/
 .DS_Store
 structure.py
+models/*.pkl
+models/*.joblib
+models/*.bin
