@@ -42,6 +42,10 @@ def _add_empty_net_feature(df: pd.DataFrame) -> pd.DataFrame:
 #     return df
 #
 
+# TODO: Implement is_rebound using prior event logic
+
+# TODO: Implement is_rush_shot using transition speed heuristics
+
 
 def add_features(df: pd.DataFrame) -> pd.DataFrame:
     """Adds features to be used in modeling by calling helper functions.
