@@ -26,6 +26,7 @@ BACKFILL_SEASONS = [
     "20222023",
     "20232024",
     "20242025",
+    # "20252026"
 ]
 
 VALID_SHOT_TYPES = {"goal", "shot-on-goal", "missed-shot"}

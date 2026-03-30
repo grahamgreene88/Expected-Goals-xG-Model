@@ -42,51 +42,6 @@ def normalize_coordinates(
         return x, y, True
 
 
-# Game Parsing
-def parse_game(data: dict) -> dict | None:
-    """
-    Parse game-level metadata from raw play-by-play API response.
-
-    Parameters:
-    - data: raw play-by-play API response
-
-    Returns:
-    - Dictionary of game fields ready for DB upsert, or None if parsing fails
-    """
-    try:
-        home_team = data.get("homeTeam", {})
-        away_team = data.get("awayTeam", {})
-
-        now_utc = datetime.now(timezone.utc)
-        now_et = now_utc.astimezone(ZoneInfo("America/New_York"))
-
-        return {
-            "game_id": data.get("id"),
-            "season": data.get("season"),
-            "game_type": data.get("gameType"),
-            "game_date": data.get("gameDate"),
-            "game_state": data.get("gameState"),
-            "game_schedule_state": data.get("gameScheduleState"),
-            "away_team_id": away_team.get("id"),
-            "away_team_city": away_team.get("placeName", {}).get("default"),
-            "away_team_name": away_team.get("commonName", {}).get("default"),
-            "away_team_abbrev": away_team.get("abbrev"),
-            "away_team_score": away_team.get("score"),
-            "home_team_id": home_team.get("id"),
-            "home_team_city": home_team.get("placeName", {}).get("default"),
-            "home_team_name": home_team.get("commonName", {}).get("default"),
-            "home_team_abbrev": home_team.get("abbrev"),
-            "home_team_score": home_team.get("score"),
-            "last_period_type": data.get("periodDescriptor", {}).get("periodType"),
-            "created_at_utc": now_utc,
-            "created_at_et": now_et,
-        }
-
-    except Exception as e:
-        print(f"Failed to parse game metadata: {e}")
-        return None
-
-
 # Shot Parsing
 def parse_shots(data: dict, game_id: int) -> list[dict]:
     """
