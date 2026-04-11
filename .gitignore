@@ -5,3 +5,7 @@ structure.py
 models/*.pkl
 models/*.joblib
 models/*.bin
+.env
+__pycache__/
+*.pyc
+.venv/

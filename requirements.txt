@@ -1,0 +1,6 @@
+requests
+psycopg2-binary
+prefect
+pandas
+python-dotenv
+pytest
