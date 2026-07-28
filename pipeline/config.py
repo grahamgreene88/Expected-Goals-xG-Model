@@ -6,7 +6,7 @@ load_dotenv()
 # Database
 DB_CONFIG = {
     "host": os.getenv("DB_HOST", "localhost"),
-    "port": int(os.getenv("DB_PORT", 5432)),
+    "port": int(os.getenv("POSTGRES_HOST_PORT", 5433)),
     "dbname": os.getenv("POSTGRES_DB"),
     "user": os.getenv("POSTGRES_USER"),
     "password": os.getenv("POSTGRES_PASSWORD"),
