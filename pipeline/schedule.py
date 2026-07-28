@@ -1,6 +1,8 @@
 import requests
 from pipeline.config import NHL_API_BASE_URL, API_TIMEOUT_SECONDS, BACKFILL_SEASONS
 
+REGULAR_SEASON_GAME_TYPE = 2
+
 
 # Helpers
 def _get_team_abbreviations() -> list[str]:
@@ -98,7 +100,8 @@ def get_season_games(season: str) -> list[dict]:
             data = response.json()
 
             for game in data.get("games", []):
-                if game.get("gameType") != 2:
+                # Only process regular season games
+                if game.get("gameType") != REGULAR_SEASON_GAME_TYPE:
                     continue
                 game_id = game["id"]
                 if game_id in seen_game_ids:
@@ -150,6 +153,8 @@ def get_games_for_date(date: str) -> list[dict]:
         for day in data.get("gameWeek", []):
             if day.get("date") == date:
                 for game in day.get("games", []):
+                    if game.get("gameType") != REGULAR_SEASON_GAME_TYPE:
+                        continue
                     try:
                         games.append(_parse_game_data(game, date))
                     except (KeyError, TypeError) as e:

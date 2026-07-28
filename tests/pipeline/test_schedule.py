@@ -2,7 +2,7 @@ import pytest
 from pipeline.schedule import _parse_game_data
 
 
-# Fixture
+# Fixtures
 @pytest.fixture
 def sample_game_record():
     """
