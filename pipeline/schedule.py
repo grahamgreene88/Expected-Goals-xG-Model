@@ -1,5 +1,6 @@
 import requests
-from pipeline.config import NHL_API_BASE_URL, API_TIMEOUT_SECONDS, BACKFILL_SEASONS
+
+from pipeline.config import API_TIMEOUT_SECONDS, NHL_API_BASE_URL
 
 REGULAR_SEASON_GAME_TYPE = 2
 

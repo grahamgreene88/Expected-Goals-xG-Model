@@ -48,8 +48,8 @@ def _apply_filters(df: pd.DataFrame) -> pd.DataFrame:
       - Shootout events
       - Shots on an empty net (opponent's goalie is pulled)
     """
-    # Only rows where coordinate normalization succeeded
-    mask = df["coord_normalized"] == True
+    # Only rows where coordinate normalization succeeded (df["coord_normalized"] == True)
+    mask = df["coord_normalized"]
 
     # Exclude shootout shots
     mask &= df["period_type"] != "SO"
