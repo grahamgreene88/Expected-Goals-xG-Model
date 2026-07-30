@@ -1,7 +1,9 @@
-import psycopg2
-from psycopg2.extras import execute_values
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
+
+import psycopg2
+from psycopg2.extras import execute_values
+
 from pipeline.config import DB_CONFIG, VALID_PIPELINE_STATUSES
 
 

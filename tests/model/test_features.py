@@ -17,7 +17,6 @@ import pytest
 from model.features import (
     FEATURE_COLS,
     TARGET_COL,
-    VALID_SHOT_TYPES,
     _apply_filters,
     _clean_shot_type,
     _compute_geometry,
@@ -108,16 +107,16 @@ class TestComputeGeometry:
 
     def test_is_behind_net_false_in_front(self):
         row = self._geometry_for(x=69, y=0)
-        assert row["is_behind_net"] == False
+        assert not row["is_behind_net"]
 
     def test_is_behind_net_true_behind(self):
         row = self._geometry_for(x=94, y=0)
-        assert row["is_behind_net"] == True
+        assert row["is_behind_net"]
 
     def test_is_behind_net_false_at_goal_line(self):
         # x == NET_X is not behind the net
         row = self._geometry_for(x=89, y=0)
-        assert row["is_behind_net"] == False
+        assert not row["is_behind_net"]
 
     def test_behind_net_angle_exceeds_90_degrees(self):
         row = self._geometry_for(x=94, y=10)
@@ -146,7 +145,7 @@ class TestApplyFilters:
         )
         result = _apply_filters(df)
         assert len(result) == 1
-        assert result.iloc[0]["coord_normalized"] == True
+        assert result.iloc[0]["coord_normalized"]
 
     # Empty net exclusion
 

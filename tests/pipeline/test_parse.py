@@ -1,4 +1,5 @@
 import pytest
+
 from pipeline.parse import normalize_coordinates, parse_shots
 
 
