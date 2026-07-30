@@ -1,10 +1,12 @@
 import time
+
 import requests
+
 from pipeline.config import (
-    NHL_API_BASE_URL,
-    API_RATE_LIMIT_SECONDS,
     API_MAX_RETRIES,
+    API_RATE_LIMIT_SECONDS,
     API_TIMEOUT_SECONDS,
+    NHL_API_BASE_URL,
 )
 
 
