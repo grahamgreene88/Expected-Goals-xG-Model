@@ -4,3 +4,6 @@ prefect
 pandas
 python-dotenv
 pytest
+numpy
+scikit-learn
+xgboost
