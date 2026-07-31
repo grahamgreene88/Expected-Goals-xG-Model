@@ -21,8 +21,6 @@ from sklearn.metrics import brier_score_loss, roc_auc_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from xgboost import XGBClassifier
-from sklearn.preprocessing import FunctionTransformer
-import numpy as np
 
 from model.features import FEATURE_COLS, TARGET_COL
 

@@ -4,6 +4,10 @@ line-length = 88
 
 [tool.ruff]
 line-length = 88
+exclude = [
+    "notebooks/",
+    "*.ipynb"
+]
 
 
 [tool.ruff.lint]
