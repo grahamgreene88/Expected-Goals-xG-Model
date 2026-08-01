@@ -24,14 +24,14 @@ ARTIFACTS_DIR = Path("artifacts")
 MODEL_PATH = ARTIFACTS_DIR / "xgb_pipeline.pkl"
 
 
-def _load_pipeline():
+def _load_pipeline(path: Path = MODEL_PATH):
     """Load the fitted XGBoost pipeline from disk."""
-    if not MODEL_PATH.exists():
+    if not path.exists():
         raise FileNotFoundError(
             f"Model artifact not found at {MODEL_PATH}. "
             "Run python -m model.train to generate it."
         )
-    with open(MODEL_PATH, "rb") as f:
+    with open(path, "rb") as f:
         return pickle.load(f)
 
 

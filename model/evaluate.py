@@ -18,7 +18,7 @@ from sklearn.pipeline import Pipeline
 
 
 ## Metrics
-def compute_metrics(y_true: pd.Series, y_pred_proba: np.ndarray) -> dict:
+def compute_metrics(y_true: ArrayLike, y_pred_proba: ArrayLike) -> dict:
     """
     Compute standard xG evaluation metrics.
 
@@ -33,6 +33,9 @@ def compute_metrics(y_true: pd.Series, y_pred_proba: np.ndarray) -> dict:
         null_brier is the Brier score of a model that always predicts
         the mean goal rate — the baseline any useful model must beat.
     """
+    y_true = np.asarray(y_true)
+    y_pred_proba = np.asarray(y_pred_proba)
+
     p_bar = np.mean(y_true)
     null_brier = float(np.mean((p_bar - np.array(y_true)) ** 2))
 
@@ -72,8 +75,8 @@ def compute_calibration(
         actual_rate    : actual goal rate in bin
         count          : number of shots in bin
     """
-    y_true = np.array(y_true)
-    y_pred_proba = np.array(y_pred_proba)
+    y_true = np.asarray(y_true)
+    y_pred_proba = np.asarray(y_pred_proba)
 
     bin_edges = np.linspace(0, 1, n_bins + 1)
     rows = []
