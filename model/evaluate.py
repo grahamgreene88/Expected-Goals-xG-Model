@@ -8,13 +8,18 @@ Functions:
     get_feature_importance → cleaned feature names with importance scores
 """
 
+import json
 import re
+from datetime import UTC, datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
 from sklearn.pipeline import Pipeline
+
+ARTIFACTS_DIR = Path(__file__).parent.parent / "artifacts"
 
 
 ## Metrics
@@ -45,6 +50,24 @@ def compute_metrics(y_true: ArrayLike, y_pred_proba: ArrayLike) -> dict:
         "log_loss": round(log_loss(y_true, y_pred_proba), 4),
         "null_brier": round(null_brier, 4),
     }
+
+
+def save_metrics(
+    metrics_by_model: dict, path: Path = ARTIFACTS_DIR / "metrics.json"
+) -> None:
+    """
+    Persist model evaluation metrics to a JSON artifact.
+
+    metrics_by_model: dict keyed by model name, e.g.
+        {"logistic_regression": {...}, "xgboost": {...}}
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "generated_at": datetime.now(UTC).isoformat(),
+        "test_season": "2025-26",
+        "models": metrics_by_model,
+    }
+    path.write_text(json.dumps(payload, indent=2))
 
 
 ## Calibration
