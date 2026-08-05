@@ -7,3 +7,5 @@ pytest
 numpy
 scikit-learn
 xgboost
+plotly==6.3.1
+streamlit==1.61.1

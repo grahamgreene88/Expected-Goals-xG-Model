@@ -1,0 +1,18 @@
+{
+  "generated_at": "2026-08-04T20:16:20.295894+00:00",
+  "test_season": "2025-26",
+  "models": {
+    "logistic_regression": {
+      "brier": 0.061,
+      "auc": 0.7373,
+      "log_loss": 0.2263,
+      "null_brier": 0.0636
+    },
+    "xgboost": {
+      "brier": 0.0604,
+      "auc": 0.7454,
+      "log_loss": 0.2238,
+      "null_brier": 0.0636
+    }
+  }
+}

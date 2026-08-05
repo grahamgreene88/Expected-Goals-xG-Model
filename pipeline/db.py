@@ -3,8 +3,18 @@ from zoneinfo import ZoneInfo
 
 import psycopg2
 from psycopg2.extras import execute_values
+from psycopg2.pool import ThreadedConnectionPool
 
 from pipeline.config import DB_CONFIG, VALID_PIPELINE_STATUSES
+
+_connection_pool = None
+
+
+def get_connection_pool(minconn: int = 1, maxconn: int = 10):
+    global _connection_pool
+    if _connection_pool is None:
+        _connection_pool = ThreadedConnectionPool(minconn, maxconn, **DB_CONFIG)
+    return _connection_pool
 
 
 # Connection
