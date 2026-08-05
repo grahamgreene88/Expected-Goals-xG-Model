@@ -1,10 +1,10 @@
 from pathlib import Path
 
-import plotly.graph_objects as go
 import pandas as pd
+import plotly.graph_objects as go
 from PIL import Image
 
-RINK_IMAGE_PATH = Path(__file__).parent / "static" / "rink_full.png"
+RINK_IMAGE_PATH = Path(__file__).parent / "static" / "rink_half.png"
 _rink_image = Image.open(RINK_IMAGE_PATH)  # loaded once at import time
 
 
@@ -13,7 +13,8 @@ def make_rink_shot_chart(df: pd.DataFrame) -> go.Figure:
     Plots shots on a full-rink background, colored by xg, with hover
     tooltips showing shot detail.
     """
-    df = df.copy()
+    df = df[df["x_coord"] >= 0].copy()  # offensive half only
+
     df["outcome_label"] = df["is_goal"].map({1: "Goal", 0: "No Goal"})
 
     # Force standard numpy float64 — pandas nullable Float64 extension
@@ -28,10 +29,10 @@ def make_rink_shot_chart(df: pd.DataFrame) -> go.Figure:
             source=_rink_image,
             xref="x",
             yref="y",
-            x=-100,
+            x=0,
             y=42.5,  # top-left anchor, in data coords
-            sizex=198,
-            sizey=84,  # full rink: 198ft wide, 84ft tall
+            sizex=100,
+            sizey=85,  # full rink: 198ft wide, 84ft tall
             sizing="stretch",
             layer="below",
         )
@@ -69,11 +70,68 @@ def make_rink_shot_chart(df: pd.DataFrame) -> go.Figure:
         )
     )
 
-    fig.update_xaxes(range=[-100, 100], visible=False)
+    fig.update_xaxes(range=[0, 100], visible=False)
     fig.update_yaxes(range=[-42.5, 42.5], visible=False, scaleanchor="x", scaleratio=1)
     fig.update_layout(
         margin=dict(l=0, r=0, t=0, b=0),
         height=500,
     )
+
+    return fig
+
+
+def make_shot_heatmap(df: pd.DataFrame, metric: str = "volume") -> go.Figure:
+    """
+    Plots a binned shot density heatmap over the rink.
+    metric: "volume" (shot count per bin) or "avg_xg" (average xG per bin).
+    """
+    df = df[df["x_coord"] >= 0].copy()  # offensive half only
+
+    fig = go.Figure()
+
+    fig.add_layout_image(
+        dict(
+            source=_rink_image,
+            xref="x",
+            yref="y",
+            x=0,
+            y=42.5,
+            sizex=100,
+            sizey=85,
+            sizing="stretch",
+            layer="below",
+        )
+    )
+
+    heatmap_kwargs = dict(
+        x=df["x_coord"],
+        y=df["y_coord"],
+        xbins=dict(start=0, end=100, size=2.5),
+        ybins=dict(start=-42.5, end=42.5, size=5),
+        opacity=0.75,
+        colorscale="YlOrRd",
+    )
+
+    if metric == "volume":
+        heatmap_kwargs.update(
+            histfunc="count",
+            colorbar=dict(title="Shots"),
+            hovertemplate="Shots: %{z}<extra></extra>",
+        )
+    else:  # avg_xg
+        heatmap_kwargs.update(
+            z=df["xg"],
+            histfunc="avg",
+            zmin=0,
+            zmax=0.3,
+            colorbar=dict(title="Avg xG"),
+            hovertemplate="Avg xG: %{z:.3f}<extra></extra>",
+        )
+
+    fig.add_trace(go.Histogram2d(**heatmap_kwargs))
+
+    fig.update_xaxes(range=[0, 100], visible=False)
+    fig.update_yaxes(range=[-42.5, 42.5], visible=False, scaleanchor="x", scaleratio=1)
+    fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=500)
 
     return fig

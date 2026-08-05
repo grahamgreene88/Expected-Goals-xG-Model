@@ -5,9 +5,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 import streamlit as st
 
-from app.filters import render_season_team_filters
+from app.charts import make_shot_heatmap
 from app.data_access import get_scored_shots
-from app.charts import make_rink_shot_chart
+from app.filters import render_season_team_filters
+from app.styling import SHOT_TYPES
 
 st.set_page_config(page_title="Shot Explorer", page_icon="🏒", layout="wide")
 
@@ -21,20 +22,33 @@ st.markdown(
 
 season, team = render_season_team_filters(key_prefix="shot_explorer")
 
+metric_label = st.radio(
+    "Heatmap shows:",
+    options=["Shot Volume", "Average xG"],
+    horizontal=True,
+    key="shot_explorer_metric",
+)
+metric = "volume" if metric_label == "Shot Volume" else "avg_xg"
+
+shot_types = st.multiselect(
+    "Shot types",
+    options=SHOT_TYPES,
+    default=SHOT_TYPES,
+    key="shot_explorer_shot_types",
+)
+
 if season is None:
     st.info("Select a season from the sidebar to view shots.")
 else:
     df = get_scored_shots(season=season, team=team)
+    df = df[df["x_coord"] >= 0]  # offensive half only, matches half-rink image
+
+    if shot_types and set(shot_types) != set(SHOT_TYPES):
+        df = df[df["shot_type"].isin(shot_types)]
+
     if df.empty:
         st.warning("No shots found for the selected filters.")
     else:
-        if len(df) > MAX_PLOT_POINTS:
-            st.caption(
-                f"Showing a random sample of {MAX_PLOT_POINTS:,} of {len(df):,} shots."
-            )
-            df = df.sample(MAX_PLOT_POINTS, random_state=42)
-        else:
-            st.caption(f"Showing {len(df):,} shots")
-
-        fig = make_rink_shot_chart(df)
+        st.caption(f"{len(df):,} shots")
+        fig = make_shot_heatmap(df, metric=metric)
         st.plotly_chart(fig, use_container_width=True)
