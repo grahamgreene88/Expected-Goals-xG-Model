@@ -31,11 +31,13 @@ def get_available_seasons() -> list[str]:
 @st.cache_data(ttl=86400)
 def get_available_teams() -> list[str]:
     query = """
-                SELECT DISTINCT home_team AS team FROM games
-                UNION
-                SELECT DISTINCT away_team AS team FROM games
-                ORDER BY team
-            """
+        SELECT DISTINCT (home_team_city || ' ' || home_team_name) AS team
+        FROM games
+        UNION
+        SELECT DISTINCT (away_team_city || ' ' || away_team_name) AS team
+        FROM games
+        ORDER BY team
+    """
     with get_conn() as conn:
         df = pd.read_sql(query, conn)
     return df["team"].tolist()
