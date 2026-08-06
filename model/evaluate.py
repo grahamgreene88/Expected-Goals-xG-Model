@@ -10,7 +10,7 @@ Functions:
 
 import json
 import re
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -53,19 +53,29 @@ def compute_metrics(y_true: ArrayLike, y_pred_proba: ArrayLike) -> dict:
 
 
 def save_metrics(
-    metrics_by_model: dict, path: Path = ARTIFACTS_DIR / "metrics.json"
+    metrics_by_model: dict,
+    calibration_by_model: dict[str, pd.DataFrame],
+    feature_importance_by_model: dict[str, pd.DataFrame],
+    path: Path = ARTIFACTS_DIR / "metrics.json",
 ) -> None:
     """
-    Persist model evaluation metrics to a JSON artifact.
-
-    metrics_by_model: dict keyed by model name, e.g.
-        {"logistic_regression": {...}, "xgboost": {...}}
+    Persist model evaluation metrics, calibration, and feature importance
+    to a single JSON artifact.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
+
     payload = {
-        "generated_at": datetime.now(UTC).isoformat(),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "test_season": "2025-26",
-        "models": metrics_by_model,
+        "metrics": metrics_by_model,
+        "calibration": {
+            model: df.to_dict(orient="list")
+            for model, df in calibration_by_model.items()
+        },
+        "feature_importance": {
+            model: df.to_dict(orient="list")
+            for model, df in feature_importance_by_model.items()
+        },
     }
     path.write_text(json.dumps(payload, indent=2))
 
