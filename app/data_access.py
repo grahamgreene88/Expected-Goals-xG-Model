@@ -57,8 +57,8 @@ def get_headline_stats() -> dict:
     return {
         "total_shots": int(shot_count),
         "season_count": int(season_count),
-        "test_auc": metrics["models"]["xgboost"]["auc"],
-        "test_brier": metrics["models"]["xgboost"]["brier"],
+        "test_auc": metrics["metrics"]["xgboost"]["auc"],
+        "test_brier": metrics["metrics"]["xgboost"]["brier"],
     }
 
 
@@ -82,3 +82,17 @@ def get_scored_shots(
     with get_conn() as conn:
         df = pd.read_sql(query, conn, params={"season": season, "team": team})  # type: ignore[arg-type]
     return score_shots(df)
+
+
+@st.cache_data(ttl=86400)
+def get_calibration_data(model: str = "xgboost") -> pd.DataFrame:
+    metrics_path = Path(__file__).parent.parent / "artifacts" / "metrics.json"
+    metrics = json.loads(metrics_path.read_text())
+    return pd.DataFrame(metrics["calibration"][model])
+
+
+@st.cache_data(ttl=86400)
+def get_feature_importance_data(model: str = "xgboost") -> pd.DataFrame:
+    metrics_path = Path(__file__).parent.parent / "artifacts" / "metrics.json"
+    metrics = json.loads(metrics_path.read_text())
+    return pd.DataFrame(metrics["feature_importance"][model])
