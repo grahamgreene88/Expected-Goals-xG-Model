@@ -34,6 +34,7 @@ def make_shot(**overrides) -> dict:
     """
     defaults = {
         "game_id": 2024020001,
+        "event_id": 15,
         "period": 1,
         "period_type": "REG",
         "x_coord": 69.0,  # 20 feet in front of net, on centre line
@@ -228,7 +229,7 @@ class TestBuildFeatures:
     def test_returns_expected_columns(self):
         df = make_df(make_shot())
         result = build_features(df)
-        expected_cols = set(["game_id"] + FEATURE_COLS + [TARGET_COL])
+        expected_cols = set(["game_id"] + ["event_id"] + FEATURE_COLS + [TARGET_COL])
         assert set(result.columns) == expected_cols
 
     def test_index_is_reset(self):
@@ -266,3 +267,8 @@ class TestBuildFeatures:
         df = make_df(make_shot(game_id=2024020999))
         result = build_features(df)
         assert result.iloc[0]["game_id"] == 2024020999
+
+    def test_event_id_is_retained(self):
+        df = make_df(make_shot(event_id=9))
+        result = build_features(df)
+        assert result.iloc[0]["event_id"] == 9
