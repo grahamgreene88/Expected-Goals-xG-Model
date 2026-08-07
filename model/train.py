@@ -14,6 +14,8 @@ import logging
 import pickle
 from pathlib import Path
 
+import mlflow
+import mlflow.sklearn
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import LogisticRegression
@@ -49,6 +51,8 @@ CATEGORICAL_COLS = ["period", "shot_type", "zone"]
 BINARY_COLS = ["is_behind_net", "is_home_team"]
 
 RANDOM_STATE = 42
+
+MLFLOW_EXPERIMENT = "nhl_xg_model"
 
 ## Pipeline builders
 
@@ -142,7 +146,10 @@ def _log_metrics(label: str, y_true, y_pred_proba) -> None:
 
 
 def train() -> None:
-    # Load data ---
+    # Setup experiment tracking
+    mlflow.set_experiment(MLFLOW_EXPERIMENT)
+
+    # Load data
     log.info("Loading parquet files...")
     train_df = pd.read_parquet(TRAIN_PATH)
     test_df = pd.read_parquet(TEST_PATH)
@@ -151,26 +158,84 @@ def train() -> None:
 
     X_train = train_df[FEATURE_COLS]
     y_train = train_df[TARGET_COL].astype(int)
-    X_test = test_df[FEATURE_COLS]
-    y_test = test_df[TARGET_COL].astype(int)
+    # X_test = test_df[FEATURE_COLS]
+    # y_test = test_df[TARGET_COL].astype(int)
+
+    # Enable autologging for scikit-learn
+    # mlflow.sklearn.autolog()
 
     # Logistic regression
-    log.info("\nTraining logistic regression...")
-    lr_pipeline = _build_lr_pipeline()
-    lr_pipeline.fit(X_train, y_train)
+    with mlflow.start_run(run_name="train_logistic_regression"):
 
-    log.info("  Metrics:")
-    _log_metrics("LR train", y_train, lr_pipeline.predict_proba(X_train)[:, 1])
-    _log_metrics("LR test", y_test, lr_pipeline.predict_proba(X_test)[:, 1])
+        log.info("\nTraining logistic regression...")
+        lr_pipeline = _build_lr_pipeline()
+        lr_pipeline.fit(X_train, y_train)
+
+        # Log model config
+        mlflow.log_param("model_type", "logistic_regression")
+
+        mlflow.log_param("max_iter", 1000)
+
+        mlflow.log_param("random_state", RANDOM_STATE)
+
+        # Log fitted sklearn Pipeline
+        mlflow.sklearn.log_model(lr_pipeline, name="model")
+
+        # Log training metrics
+        brier_train = float(
+            brier_score_loss(y_train, lr_pipeline.predict_proba(X_train)[:, 1])
+        )
+        mlflow.log_metric("train brier loss", brier_train)
+        auc_train = float(
+            roc_auc_score(y_train, lr_pipeline.predict_proba(X_train)[:, 1])
+        )
+        mlflow.log_metric("train auc", auc_train)
+
+        # log.info("  Metrics:")
+        # # _log_metrics("LR train", y_train, lr_pipeline.predict_proba(X_train)[:, 1])
+        # _log_metrics("LR test", y_test, lr_test_pred)
+
+        log.info("  Model logged to MLflow")
 
     # XGBoost
-    log.info("\nTraining XGBoost...")
-    xgb_pipeline = _build_xgb_pipeline()
-    xgb_pipeline.fit(X_train, y_train)
+    with mlflow.start_run(run_name="train_xgboost"):
 
-    log.info("  Metrics:")
-    _log_metrics("XGB train", y_train, xgb_pipeline.predict_proba(X_train)[:, 1])
-    _log_metrics("XGB test", y_test, xgb_pipeline.predict_proba(X_test)[:, 1])
+        log.info("\nTraining XGBoost...")
+        xgb_pipeline = _build_xgb_pipeline()
+        xgb_pipeline.fit(X_train, y_train)
+
+        # Log model config
+        mlflow.log_param("model_type", "logistic_regression")
+
+        mlflow.log_param("max_iter", 1000)
+
+        mlflow.log_param("random_state", RANDOM_STATE)
+
+        mlflow.sklearn.log_model(
+            xgb_pipeline,
+            name="model",
+            registered_model_name="nhl_xg_xgboost",
+            skops_trusted_types=[
+                "xgboost.core.Booster",
+                "xgboost.sklearn.XGBClassifier",
+            ],
+        )
+
+        # Log training metrics
+        brier_train = float(
+            brier_score_loss(y_train, xgb_pipeline.predict_proba(X_train)[:, 1])
+        )
+        mlflow.log_metric("train brier loss", brier_train)
+        auc_train = float(
+            roc_auc_score(y_train, lr_pipeline.predict_proba(X_train)[:, 1])
+        )
+        mlflow.log_metric("train auc", auc_train)
+
+        # log.info("  Metrics:")
+        # _log_metrics("XGB train", y_train, xgb_pipeline.predict_proba(X_train)[:, 1])
+        # _log_metrics("XGB test", y_test, xgb_pipeline.predict_proba(X_test)[:, 1])
+
+        log.info("  Model logged to MLflow")
 
     # Save artifacts
     log.info("\nSaving pipelines...")

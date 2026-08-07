@@ -13,6 +13,7 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
+import mlflow
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
@@ -78,6 +79,28 @@ def save_metrics(
         },
     }
     path.write_text(json.dumps(payload, indent=2))
+
+    # Log evaluation results to MLflow
+    for model, metrics in metrics_by_model.items():
+        mlflow.log_metrics(
+            {
+                f"{model}_brier": metrics["brier"],
+                f"{model}_auc": metrics["auc"],
+                f"{model}_log_loss": metrics["log_loss"],
+                f"{model}_null_brier": metrics["null_brier"],
+            }
+        )
+    mlflow.log_artifact(str(path))
+
+    for model, df in calibration_by_model.items():
+        calibration_path = ARTIFACTS_DIR / f"{model}_calibration.csv"
+        df.to_csv(calibration_path, index=False)
+        mlflow.log_artifact(str(calibration_path))
+
+    for model, df in feature_importance_by_model.items():
+        importance_path = ARTIFACTS_DIR / f"{model}_feature_importance.csv"
+        df.to_csv(importance_path, index=False)
+        mlflow.log_artifact(str(importance_path))
 
 
 ## Calibration
