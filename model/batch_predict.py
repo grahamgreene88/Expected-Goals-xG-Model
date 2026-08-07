@@ -1,9 +1,12 @@
 import pandas as pd
 from psycopg2.extras import execute_values
 
+from model.mlflow_helpers import get_production_model_version
 from model.predict import score_shots
 
-MODEL_VERSION = "xgb_v0.1"  # bump whenever xgb_pipeline.pkl is retrained/replaced
+# Obtain model version to put in scored_shots table
+MODEL_NAME = "nhl_xg_xgboost"
+MODEL_VERSION = get_production_model_version(MODEL_NAME)
 
 
 def get_unscored_games(conn, model_version: str = MODEL_VERSION) -> list[int]:
