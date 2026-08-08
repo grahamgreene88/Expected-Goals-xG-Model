@@ -155,7 +155,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     Returns
     -------
     pd.DataFrame
-        Columns: game_id, FEATURE_COLS, TARGET_COL.
+        Columns: game_id, event_id, FEATURE_COLS, TARGET_COL.
         Filtered (no shootouts, no empty-net shots, coord_normalized only).
         Index reset.
     """

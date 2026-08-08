@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from model.predict import score_shots
+from model.features import build_features
 from pipeline.db import get_connection_pool
 
 
@@ -62,26 +62,35 @@ def get_headline_stats() -> dict:
     }
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=43200)
 def get_scored_shots(
     season: str | None = None, team: str | None = None
 ) -> pd.DataFrame:
     """
-    Queries raw shots (optionally filtered by season/team), scores them via
-    score_shots(), and returns the filtered, xg-annotated DataFrame.
+    Queries raw shots (optionally filtered by season/team), joined against
+    scored_shots for the most recently scored xg value per shot.
     """
     query = """
-        SELECT s.*
+        SELECT DISTINCT ON (ss.game_id, ss.event_id)
+            s.*, ss.xg, ss.model_version, ss.scored_at
         FROM shots s
         JOIN games g ON s.game_id = g.game_id
+        JOIN scored_shots ss
+          ON s.game_id = ss.game_id AND s.event_id = ss.event_id
         WHERE (%(season)s IS NULL OR g.season = %(season)s)
           AND (%(team)s IS NULL OR
                (g.home_team_city || ' ' || g.home_team_name) = %(team)s OR
                (g.away_team_city || ' ' || g.away_team_name) = %(team)s)
+        ORDER BY ss.game_id, ss.event_id, ss.scored_at DESC
     """
     with get_conn() as conn:
         df = pd.read_sql(query, conn, params={"season": season, "team": team})  # type: ignore[arg-type]
-    return score_shots(df)
+
+    xg_cols = df[["game_id", "event_id", "xg", "model_version", "scored_at"]]
+    raw_shots = df.drop(columns=["xg", "model_version", "scored_at"])
+
+    featured = build_features(raw_shots)
+    return featured.merge(xg_cols, on=["game_id", "event_id"], how="inner")
 
 
 @st.cache_data(ttl=86400)

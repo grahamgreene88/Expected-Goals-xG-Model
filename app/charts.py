@@ -56,7 +56,14 @@ def make_rink_shot_chart(df: pd.DataFrame) -> go.Figure:
                 # line=dict(width=0.5, color="black"),
             ),
             customdata=df[
-                ["xg", "shot_type", "shot_distance", "shot_angle", "is_goal", "period"]
+                [
+                    "xg",
+                    "shot_type",
+                    "shot_distance",
+                    "shot_angle",
+                    "outcome_label",
+                    "period",
+                ]
             ],
             hovertemplate=(
                 "<b>xG: %{customdata[0]:.3f}</b><br>"
