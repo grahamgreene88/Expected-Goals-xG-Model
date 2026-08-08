@@ -11,7 +11,6 @@ Usage:
 """
 
 import logging
-import pickle
 from pathlib import Path
 
 import mlflow
@@ -161,9 +160,6 @@ def train() -> None:
     # X_test = test_df[FEATURE_COLS]
     # y_test = test_df[TARGET_COL].astype(int)
 
-    # Enable autologging for scikit-learn
-    # mlflow.sklearn.autolog()
-
     # Logistic regression
     with mlflow.start_run(run_name="train_logistic_regression"):
 
@@ -205,11 +201,16 @@ def train() -> None:
         xgb_pipeline.fit(X_train, y_train)
 
         # Log model config
-        mlflow.log_param("model_type", "logistic_regression")
-
-        mlflow.log_param("max_iter", 1000)
-
-        mlflow.log_param("random_state", RANDOM_STATE)
+        xgb_pipeline_params = {
+            "n_estimators": xgb_pipeline.named_steps["classifier"].n_estimators,
+            "learning_rate": xgb_pipeline.named_steps["classifier"].learning_rate,
+            "max_depth": xgb_pipeline.named_steps["classifier"].max_depth,
+            "subsample": xgb_pipeline.named_steps["classifier"].subsample,
+            "colsample_bytree": xgb_pipeline.named_steps["classifier"].colsample_bytree,
+            "random_state": xgb_pipeline.named_steps["classifier"].random_state,
+            "eval_metric": xgb_pipeline.named_steps["classifier"].eval_metric,
+        }
+        mlflow.log_params(xgb_pipeline_params)
 
         mlflow.sklearn.log_model(
             xgb_pipeline,
@@ -227,7 +228,7 @@ def train() -> None:
         )
         mlflow.log_metric("train brier loss", brier_train)
         auc_train = float(
-            roc_auc_score(y_train, lr_pipeline.predict_proba(X_train)[:, 1])
+            roc_auc_score(y_train, xgb_pipeline.predict_proba(X_train)[:, 1])
         )
         mlflow.log_metric("train auc", auc_train)
 
@@ -237,21 +238,21 @@ def train() -> None:
 
         log.info("  Model logged to MLflow")
 
-    # Save artifacts
-    log.info("\nSaving pipelines...")
-    ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
+    # # Save artifacts
+    # log.info("\nSaving pipelines...")
+    # ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    lr_path = ARTIFACTS_DIR / "lr_pipeline.pkl"
-    xgb_path = ARTIFACTS_DIR / "xgb_pipeline.pkl"
+    # lr_path = ARTIFACTS_DIR / "lr_pipeline.pkl"
+    # xgb_path = ARTIFACTS_DIR / "xgb_pipeline.pkl"
 
-    with open(lr_path, "wb") as f:
-        pickle.dump(lr_pipeline, f)
-    with open(xgb_path, "wb") as f:
-        pickle.dump(xgb_pipeline, f)
+    # with open(lr_path, "wb") as f:
+    #     pickle.dump(lr_pipeline, f)
+    # with open(xgb_path, "wb") as f:
+    #     pickle.dump(xgb_pipeline, f)
 
-    log.info(f"  Saved {lr_path}")
-    log.info(f"  Saved {xgb_path}")
-    log.info("\nDone.")
+    # log.info(f"  Saved {lr_path}")
+    # log.info(f"  Saved {xgb_path}")
+    # log.info("\nDone.")
 
 
 if __name__ == "__main__":
