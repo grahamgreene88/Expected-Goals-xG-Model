@@ -1,15 +1,13 @@
 import pandas as pd
 from psycopg2.extras import execute_values
 
-from model.mlflow_helpers import get_production_model_version
 from model.predict import score_shots
 
-# Obtain model version to put in scored_shots table
-MODEL_NAME = "nhl_xg_xgboost"
-MODEL_VERSION = get_production_model_version(MODEL_NAME)
 
-
-def get_unscored_games(conn, model_version: str = MODEL_VERSION) -> list[int]:
+def get_unscored_games(
+    conn,
+    model_version: str,
+) -> list[int]:
     """Games that have at least one shot not yet scored under model_version."""
 
     query = """
@@ -24,7 +22,9 @@ def get_unscored_games(conn, model_version: str = MODEL_VERSION) -> list[int]:
 
 
 def score_and_persist_games(
-    conn, game_ids: list[int], model_version: str = MODEL_VERSION
+    conn,
+    game_ids: list[int],
+    model_version: str,
 ) -> int:
     if not game_ids:
         return 0
