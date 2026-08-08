@@ -214,3 +214,101 @@ def make_feature_importance_chart(df: pd.DataFrame, top_n: int = 15) -> go.Figur
         margin=dict(l=175, r=15, t=15, b=15),
     )
     return fig
+
+
+def make_team_trend_chart(df: pd.DataFrame) -> go.Figure:
+    """
+    Plots a single team's GF/xGF and GA/xGA across seasons.
+    Expects df filtered to one team already, sorted by season, with
+    columns: season, GF, xGF, GA, xGA.
+    """
+    df = df.sort_values("season")
+
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Scatter(
+            x=df["season"],
+            y=df["GF"],
+            mode="lines+markers",
+            name="Goals For",
+            line=dict(color="crimson"),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df["season"],
+            y=df["xGF"],
+            mode="lines+markers",
+            name="xG For",
+            line=dict(color="crimson", dash="dash"),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df["season"],
+            y=df["GA"],
+            mode="lines+markers",
+            name="Goals Against",
+            line=dict(color="steelblue"),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df["season"],
+            y=df["xGA"],
+            mode="lines+markers",
+            name="xG Against",
+            line=dict(color="steelblue", dash="dash"),
+        )
+    )
+
+    fig.update_layout(
+        xaxis_title="Season",
+        yaxis_title="Goals",
+        height=450,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02),
+    )
+    return fig
+
+
+def make_xgf_pct_ranking_chart(df: pd.DataFrame) -> go.Figure:
+    """
+    Horizontal bar chart ranking teams by xGF% for a single season.
+    Expects df with columns: team, xGF_pct, GF, xGF, GA, xGA.
+    """
+    df = df.sort_values("xGF_pct").reset_index(
+        drop=True
+    )  # ascending so best renders at top
+
+    fig = go.Figure(
+        go.Bar(
+            x=df["xGF_pct"],
+            y=df["team"],
+            orientation="h",
+            marker=dict(
+                color=df["xGF_pct"],
+                colorscale="RdBu",
+                cmid=0.5,
+            ),
+            customdata=df[["GF", "xGF", "GA", "xGA"]],
+            hovertemplate=(
+                "<b>%{y}</b><br>"
+                "xGF%: %{x:.1%}<br>"
+                "GF: %{customdata[0]:.0f} / xGF: %{customdata[1]:.1f}<br>"
+                "GA: %{customdata[2]:.0f} / xGA: %{customdata[3]:.1f}"
+                "<extra></extra>"
+            ),
+        )
+    )
+
+    fig.add_vline(x=0.5, line=dict(dash="dash", color="gray"))
+
+    fig.update_layout(
+        xaxis_title="xGF%",
+        xaxis=dict(tickformat=".0%"),
+        yaxis_title=None,
+        height=max(400, len(df) * 22),
+        margin=dict(l=175, r=15, t=15, b=15),
+    )
+    return fig
