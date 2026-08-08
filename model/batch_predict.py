@@ -3,10 +3,11 @@ from psycopg2.extras import execute_values
 
 from model.predict import score_shots
 
-MODEL_VERSION = "xgb_v0.1"  # bump whenever xgb_pipeline.pkl is retrained/replaced
 
-
-def get_unscored_games(conn, model_version: str = MODEL_VERSION) -> list[int]:
+def get_unscored_games(
+    conn,
+    model_version: str,
+) -> list[int]:
     """Games that have at least one shot not yet scored under model_version."""
 
     query = """
@@ -21,7 +22,9 @@ def get_unscored_games(conn, model_version: str = MODEL_VERSION) -> list[int]:
 
 
 def score_and_persist_games(
-    conn, game_ids: list[int], model_version: str = MODEL_VERSION
+    conn,
+    game_ids: list[int],
+    model_version: str,
 ) -> int:
     if not game_ids:
         return 0

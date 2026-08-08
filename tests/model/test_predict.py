@@ -3,15 +3,17 @@ Tests for:
   - model/predict.py       : _load_pipeline (missing model error)
 """
 
-import pytest
+from unittest.mock import patch
 
 ## _load_pipeline tests
 
 
 class TestLoadPipeline:
 
-    def test_raises_file_not_found_for_missing_model(self, tmp_path):
+    @patch("model.predict.mlflow.sklearn.load_model")
+    def test_loads_production_model(self, mock_load_model):
         from model.predict import _load_pipeline
 
-        with pytest.raises(FileNotFoundError, match="Run python -m model.train"):
-            _load_pipeline(path=tmp_path / "missing.pkl")
+        _load_pipeline()
+
+        mock_load_model.assert_called_once_with("models:/nhl_xg_xgboost@production")

@@ -1,11 +1,15 @@
 from prefect import flow, task
 
 from model.batch_predict import (
-    MODEL_VERSION,
     get_unscored_games,
     score_and_persist_games,
 )
+from model.mlflow_helpers import get_production_model_version
 from pipeline.db import get_connection
+
+# Obtain model version to put in scored_shots table
+MODEL_NAME = "nhl_xg_xgboost"
+MODEL_VERSION = get_production_model_version(MODEL_NAME)
 
 
 @task

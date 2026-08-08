@@ -13,26 +13,23 @@ Usage:
     scored_df = score_shots(raw_df)
 """
 
-import pickle
-from pathlib import Path
+from typing import cast
 
+import mlflow.sklearn
 import pandas as pd
+from sklearn.pipeline import Pipeline
 
 from model.features import FEATURE_COLS, build_features
 
-ARTIFACTS_DIR = Path("artifacts")
-MODEL_PATH = ARTIFACTS_DIR / "xgb_pipeline.pkl"
+MODEL_URI = "models:/nhl_xg_xgboost@production"
 
 
-def _load_pipeline(path: Path = MODEL_PATH):
-    """Load the fitted XGBoost pipeline from disk."""
-    if not path.exists():
-        raise FileNotFoundError(
-            f"Model artifact not found at {MODEL_PATH}. "
-            "Run python -m model.train to generate it."
-        )
-    with open(path, "rb") as f:
-        return pickle.load(f)
+def _load_pipeline() -> Pipeline:
+    """Load the production XGBoost pipeline from MLflow Model Registry."""
+    return cast(
+        Pipeline,
+        mlflow.sklearn.load_model(MODEL_URI),
+    )
 
 
 def score_shots(df: pd.DataFrame) -> pd.DataFrame:
