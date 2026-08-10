@@ -1,4 +1,4 @@
-from prefect import flow, task
+from prefect import flow, get_run_logger, task
 
 from model.batch_predict import (
     get_unscored_games,
@@ -9,32 +9,28 @@ from pipeline.db import get_connection
 
 # Obtain model version to put in scored_shots table
 MODEL_NAME = "nhl_xg_xgboost"
-MODEL_VERSION = get_production_model_version(MODEL_NAME)
 
 
 @task
 def find_unscored_games(model_version: str):
-    conn = get_connection()
-    try:
+    with get_connection() as conn:
         return get_unscored_games(conn, model_version)
-    finally:
-        conn.close()
 
 
 @task
 def predict_shots_batch(game_ids, model_version: str) -> int:
-    conn = get_connection()
-    try:
+    with get_connection() as conn:
         return score_and_persist_games(conn, game_ids, model_version)
-    finally:
-        conn.close()
 
 
 @flow(name="batch-predict-shots")
-def batch_predict_flow(model_version: str = MODEL_VERSION):
+def batch_predict_flow(model_version: str | None = None):
+    logger = get_run_logger
+    model_version = model_version or get_production_model_version(MODEL_NAME)
+
     game_ids = find_unscored_games(model_version)
     count = predict_shots_batch(game_ids, model_version)
-    print(f"Scored {count} shots under model_version={model_version}")
+    logger.info(f"Scored {count} shots under model_version={model_version}")
     return count
 
 
