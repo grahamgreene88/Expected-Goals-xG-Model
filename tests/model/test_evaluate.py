@@ -1,11 +1,13 @@
 """
 Tests for:
-  - model/evaluate.py      : compute_metrics, compute_calibration, get_feature_importance
+  - model/evaluate.py      : compute_metrics, compute_calibration, get_feature_importance, save_metrics
 """
 
 from unittest.mock import patch
 
+import mlflow
 import numpy as np
+import pandas as pd
 import pytest
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
@@ -16,6 +18,7 @@ from model.evaluate import (
     compute_calibration,
     compute_metrics,
     get_feature_importance,
+    save_metrics,
 )
 
 ## Helpers
@@ -207,3 +210,64 @@ class TestGetFeatureImportance:
         ):
             with pytest.raises(ValueError, match="Cannot extract feature importance"):
                 get_feature_importance(pipeline)
+
+
+## save_metrics tests
+
+
+class TestSaveMetrics:
+
+    def test_save_metrics_logs_to_mlflow(self, tmp_path):
+        mlflow.set_tracking_uri(f"sqlite:///{tmp_path / 'test_mlflow.db'}")
+        mlflow.set_experiment("test_exp")
+
+        metrics_by_model = {
+            "xgboost": {
+                "brier": 0.08,
+                "auc": 0.75,
+                "log_loss": 0.3,
+                "null_brier": 0.09,
+            }
+        }
+        calibration_by_model = {
+            "xgboost": pd.DataFrame(
+                {
+                    "bin_start": [0, 0.1, 0.2],
+                    "bin_end": [0.1, 0.2, 0.3],
+                    "bin_mid": [0.05, 0.15, 0.25],
+                    "predicted_mean": [0.0431, 0.1529, 0.2185],
+                    "actual_rate": [0.0407, 0.1696, 0.2098],
+                    "count": [76830, 11560, 3209],
+                }
+            )
+        }
+        fi_by_model = {
+            "xgboost": pd.DataFrame({"feature": ["shot_distance"], "importance": [0.4]})
+        }
+
+        out_path = tmp_path / "metrics.json"
+
+        with mlflow.start_run() as run:
+            save_metrics(
+                metrics_by_model,
+                calibration_by_model,
+                fi_by_model,
+                path=out_path,
+            )
+        client = mlflow.MlflowClient()
+
+        # Check metrics
+        run_data = client.get_run(run.info.run_id)
+
+        assert run_data.data.metrics["xgboost_brier"] == 0.08
+        assert run_data.data.metrics["xgboost_auc"] == 0.75
+        assert run_data.data.metrics["xgboost_log_loss"] == 0.3
+        assert run_data.data.metrics["xgboost_null_brier"] == 0.09
+
+        # Check artifacts
+        artifacts = client.list_artifacts(run.info.run_id)
+        artifact_paths = [artifact.path for artifact in artifacts]
+
+        assert "metrics.json" in artifact_paths
+        assert "xgboost_calibration.csv" in artifact_paths
+        assert "xgboost_feature_importance.csv" in artifact_paths

@@ -8,13 +8,19 @@ Functions:
     get_feature_importance → cleaned feature names with importance scores
 """
 
+import json
 import re
+from datetime import datetime, timezone
+from pathlib import Path
 
+import mlflow
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
 from sklearn.pipeline import Pipeline
+
+ARTIFACTS_DIR = Path(__file__).parent.parent / "artifacts"
 
 
 ## Metrics
@@ -45,6 +51,56 @@ def compute_metrics(y_true: ArrayLike, y_pred_proba: ArrayLike) -> dict:
         "log_loss": round(log_loss(y_true, y_pred_proba), 4),
         "null_brier": round(null_brier, 4),
     }
+
+
+def save_metrics(
+    metrics_by_model: dict,
+    calibration_by_model: dict[str, pd.DataFrame],
+    feature_importance_by_model: dict[str, pd.DataFrame],
+    path: Path = ARTIFACTS_DIR / "metrics.json",
+) -> None:
+    """
+    Persist model evaluation metrics, calibration, and feature importance
+    to a single JSON artifact.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    payload = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "test_season": "2025-26",
+        "metrics": metrics_by_model,
+        "calibration": {
+            model: df.to_dict(orient="list")
+            for model, df in calibration_by_model.items()
+        },
+        "feature_importance": {
+            model: df.to_dict(orient="list")
+            for model, df in feature_importance_by_model.items()
+        },
+    }
+    path.write_text(json.dumps(payload, indent=2))
+
+    # Log evaluation results to MLflow
+    for model, metrics in metrics_by_model.items():
+        mlflow.log_metrics(
+            {
+                f"{model}_brier": metrics["brier"],
+                f"{model}_auc": metrics["auc"],
+                f"{model}_log_loss": metrics["log_loss"],
+                f"{model}_null_brier": metrics["null_brier"],
+            }
+        )
+    mlflow.log_artifact(str(path))
+
+    for model, df in calibration_by_model.items():
+        calibration_path = ARTIFACTS_DIR / f"{model}_calibration.csv"
+        df.to_csv(calibration_path, index=False)
+        mlflow.log_artifact(str(calibration_path))
+
+    for model, df in feature_importance_by_model.items():
+        importance_path = ARTIFACTS_DIR / f"{model}_feature_importance.csv"
+        df.to_csv(importance_path, index=False)
+        mlflow.log_artifact(str(importance_path))
 
 
 ## Calibration
