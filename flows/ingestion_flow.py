@@ -10,6 +10,7 @@ from pipeline.config import (
 )
 from pipeline.db import (
     get_connection,
+    get_recent_skipped_games,
     is_game_processed,
     upsert_game,
     upsert_shots,
@@ -24,7 +25,7 @@ from pipeline.schedule import get_games_for_date, get_season_games
 @task
 def process_game(game: dict) -> None:
     """
-    Process a single game through stages 2-5:
+    Process a Since single game through stages 2-5:
     - Dedup check
     - Play-by-play fetch
     - Shot parsing
@@ -73,6 +74,80 @@ def process_game(game: dict) -> None:
         write_pipeline_log(game_id, "failed", error_message=f"DB write failed: {e}")
 
 
+@task
+def get_skipped_games_task(days: int = 3) -> list[int]:
+    return get_recent_skipped_games(days)
+
+
+# Nightly Flow
+@flow(name="nhl-xg-nightly")
+def nightly_flow() -> None:
+    """
+    Nightly pipeline — runs at 4:00 AM ET, pulls games from the previous day.
+    Only processes games where game_state == 'OFF' (final).
+    Games not yet final are logged as skipped_in_progress and retried next run.
+    Re-checks games skipped as not-yet-final within the last 3 days
+    and retries any that have since become final.
+    """
+    logger = get_run_logger()
+
+    # Compute yesterday's date in ET
+    yesterday = (
+        datetime.now(ZoneInfo("America/New_York")) - timedelta(days=1)
+    ).strftime("%Y-%m-%d")
+
+    logger.info(f"Nightly run for date: {yesterday}")
+
+    # Stage 1: Fetch game records
+    try:
+        games = get_games_for_date(yesterday)
+    except RuntimeError as e:
+        logger.error(f"Failed to fetch schedule for {yesterday}: {e}")
+        return
+    # Stage 2: Process shots for each game
+    if games:
+        logger.info(f"Found {len(games)} games for {yesterday}")
+        for game in games:
+            process_game(game)
+            time.sleep(API_RATE_LIMIT_SECONDS)
+    else:
+        logger.info(f"No games found for {yesterday}")
+    # Stage 3: retry games skipped as not yet final in last 3 days
+    skipped_game_ids = get_skipped_games_task(days=3)
+
+    if not skipped_game_ids:
+        logger.info("No skipped_in_progress games to retry")
+        logger.info("Nightly run complete")
+        return
+
+    logger.info(
+        f"Retrying {len(skipped_game_ids)} skipped_in_progress game(s): {skipped_game_ids}"
+    )
+    skipped_set = set(skipped_game_ids)
+    today = datetime.now(ZoneInfo("America/New_York")).date()
+
+    for days_back in range(1, 4):  # yesterday, 2 days ago, 3 days ago
+        check_date = today - timedelta(days=days_back)
+        date_str = check_date.strftime("%Y-%m-%d")
+
+        try:
+            day_games = get_games_for_date(date_str)
+        except RuntimeError as e:
+            logger.error(
+                f"Failed to fetch schedule for {date_str} during retry check: {e}"
+            )
+            continue
+
+        matches = [g for g in day_games if g["game_id"] in skipped_set]
+
+        for game in matches:
+            logger.info(f"Retrying game {game['game_id']} (date={date_str})")
+            process_game(game)
+            time.sleep(API_RATE_LIMIT_SECONDS)
+
+    logger.info("Nightly run complete")
+
+
 # Backfill Flow
 @flow(name="nhl-xg-backfill")
 def backfill_flow() -> None:
@@ -99,43 +174,6 @@ def backfill_flow() -> None:
         logger.info(f"Season {season} complete")
 
     logger.info("Backfill complete")
-
-
-# Nightly Flow
-@flow(name="nhl-xg-nightly")
-def nightly_flow() -> None:
-    """
-    Nightly pipeline — runs at 4:00 AM ET, pulls games from the previous day.
-    Only processes games where game_state == 'OFF' (final).
-    Games not yet final are logged as skipped_in_progress and retried next run.
-    """
-    logger = get_run_logger()
-
-    # Compute yesterday's date in ET
-    yesterday = (
-        datetime.now(ZoneInfo("America/New_York")) - timedelta(days=1)
-    ).strftime("%Y-%m-%d")
-
-    logger.info(f"Nightly run for date: {yesterday}")
-
-    # Stage 1: Fetch game records
-    try:
-        games = get_games_for_date(yesterday)
-    except RuntimeError as e:
-        logger.error(f"Failed to fetch schedule for {yesterday}: {e}")
-        return
-
-    if not games:
-        logger.info(f"No games found for {yesterday}")
-        return
-
-    logger.info(f"Found {len(games)} games for {yesterday}")
-
-    for game in games:
-        process_game(game)
-        time.sleep(API_RATE_LIMIT_SECONDS)
-
-    logger.info("Nightly run complete")
 
 
 @flow(name="nhl-xg-catchup")

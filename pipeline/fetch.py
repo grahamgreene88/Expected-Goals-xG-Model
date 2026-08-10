@@ -1,6 +1,7 @@
 import time
 
 import requests
+from prefect import get_run_logger
 
 from pipeline.config import (
     API_MAX_RETRIES,
@@ -21,6 +22,8 @@ def get_play_by_play(game_id: int) -> dict | None:
     Returns:
     - Raw API response as a dictionary, or None if all retries failed
     """
+    logger = get_run_logger()
+
     url = f"{NHL_API_BASE_URL}/v1/gamecenter/{game_id}/play-by-play"
 
     for attempt in range(1, API_MAX_RETRIES + 1):
@@ -30,33 +33,35 @@ def get_play_by_play(game_id: int) -> dict | None:
             return response.json()
 
         except requests.exceptions.Timeout:
-            print(f"Timeout for game {game_id} (attempt {attempt}/{API_MAX_RETRIES})")
+            logger.warning(
+                f"Timeout for game {game_id} (attempt {attempt}/{API_MAX_RETRIES})"
+            )
         except requests.exceptions.HTTPError as e:
             status_code = (
                 e.response.status_code if e.response is not None else "unknown"
             )
-            print(
+            logger.warning(
                 f"HTTP {status_code} error for game {game_id} (attempt {attempt}/{API_MAX_RETRIES})"
             )
             # Don't retry client errors — they won't resolve on their own
             if e.response is not None and e.response.status_code < 500:
-                print(f"Client error for game {game_id}, not retrying")
+                logger.warning(f"Client error for game {game_id}, not retrying")
                 return None
         except requests.exceptions.ConnectionError:
-            print(
+            logger.warning(
                 f"Connection error for game {game_id} (attempt {attempt}/{API_MAX_RETRIES})"
             )
         except Exception as e:
-            print(
+            logger.warning(
                 f"Unexpected error for game {game_id} (attempt {attempt}/{API_MAX_RETRIES}): {e}"
             )
 
         if attempt < API_MAX_RETRIES:
             wait = API_RATE_LIMIT_SECONDS * (2 ** (attempt - 1))
-            print(f"Retrying game {game_id} in {wait:.1f}s...")
+            logger.info(f"Retrying game {game_id} in {wait:.1f}s...")
             time.sleep(wait)
 
-    print(f"All retries exhausted for game {game_id}")
+    logger.error(f"All retries exhausted for game {game_id}")
     return None
 
 
@@ -71,6 +76,8 @@ def get_game_state(game_id: int) -> str | None:
     Returns:
     - game state string (e.g. 'OFF', 'LIVE', 'FUT') or None if fetch failed
     """
+    logger = get_run_logger()
+
     url = f"{NHL_API_BASE_URL}/v1/gamecenter/{game_id}/landing"
 
     try:
@@ -80,5 +87,5 @@ def get_game_state(game_id: int) -> str | None:
         return data.get("gameState")
 
     except Exception as e:
-        print(f"Failed to fetch game state for game {game_id}: {e}")
+        logger.error(f"Failed to fetch game state for game {game_id}: {e}")
         return None
