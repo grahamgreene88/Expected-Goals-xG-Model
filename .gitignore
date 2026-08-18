@@ -9,6 +9,4 @@ models/*.bin
 __pycache__/
 *.pyc
 .venv/
-mlruns/
-mlflow.db
-artifacts/
+/artifacts/
