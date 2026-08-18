@@ -1,0 +1,23 @@
+artifact_path: /Users/graham/Projects/xG_model/mlruns/1/models/m-0757cc5f96c241f3a192744e9952e79c/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.skops
+    predict_fn: predict
+    python_version: 3.11.11
+  sklearn:
+    code: null
+    pickled_model: model.skops
+    serialization_format: skops
+    sklearn_version: 1.7.2
+    skops_trusted_types: null
+mlflow_version: 3.15.1
+model_id: m-0757cc5f96c241f3a192744e9952e79c
+model_size_bytes: 127499
+model_uuid: m-0757cc5f96c241f3a192744e9952e79c
+prompts: null
+run_id: 9c2a21a609a541d39c8946748560ffb1
+utc_time_created: '2026-08-07 15:57:50.220659'

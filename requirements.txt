@@ -5,7 +5,7 @@ pandas
 python-dotenv
 pytest
 numpy
-scikit-learn
+scikit-learn==1.7.2
 xgboost
 plotly==6.3.1
 streamlit==1.61.1
