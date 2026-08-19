@@ -11,7 +11,7 @@ from pipeline.config import DB_CONFIG, VALID_PIPELINE_STATUSES
 _connection_pool = None
 
 
-def get_connection_pool(minconn: int = 1, maxconn: int = 10):
+def get_connection_pool(minconn: int = 1, maxconn: int = 5):
     global _connection_pool
     if _connection_pool is None:
         _connection_pool = ThreadedConnectionPool(minconn, maxconn, **DB_CONFIG)
