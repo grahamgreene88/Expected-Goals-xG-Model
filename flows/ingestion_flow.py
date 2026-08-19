@@ -80,7 +80,7 @@ def get_skipped_games_task(days: int = 3) -> list[int]:
 
 
 # Nightly Flow
-@flow(name="nhl-xg-nightly")
+@flow(name="shots-ingestion-nightly")
 def nightly_flow() -> None:
     """
     Nightly pipeline — runs at 4:00 AM ET, pulls games from the previous day.
@@ -149,7 +149,7 @@ def nightly_flow() -> None:
 
 
 # Backfill Flow
-@flow(name="nhl-xg-backfill")
+@flow(name="shots-ingestion-backfill")
 def backfill_flow() -> None:
     """
     One-time historical backfill covering all seasons in BACKFILL_SEASONS.
@@ -176,7 +176,7 @@ def backfill_flow() -> None:
     logger.info("Backfill complete")
 
 
-@flow(name="nhl-xg-catchup")
+@flow(name="shots-ingestion-catchup")
 def catchup_flow() -> None:
     """
     Catchup pipeline — finds the most recent processed game date for the
