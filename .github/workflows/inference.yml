@@ -1,0 +1,34 @@
+name: Batch Inference
+
+on:
+  workflow_run:
+    workflows: ["Nightly Ingestion"]
+    types: [completed]
+  workflow_dispatch: {}  # also allow manual runs, e.g. after a model promotion
+
+jobs:
+  run-inference:
+    runs-on: ubuntu-latest
+    # Only proceed if the triggering ingestion run succeeded
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run batch inference flow
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_SSLMODE: ${{ secrets.DB_SSLMODE }}
+          PREFECT_API_KEY: ${{ secrets.PREFECT_API_KEY }}
+          PREFECT_API_URL: ${{ secrets.PREFECT_API_URL }}
+        run: python -m flows.inference_flow
