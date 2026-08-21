@@ -42,3 +42,12 @@ def test_get_unscored_games_returns_game_ids():
     # check the model_version param was passed through
     _, kwargs = mock_read_sql.call_args
     assert kwargs["params"]["model_version"] == "v3"
+
+
+def test_get_unscored_games_empty():
+    conn = MagicMock()
+    with patch(
+        "model.batch_predict.pd.read_sql", return_value=pd.DataFrame({"game_id": []})
+    ):
+        result = get_unscored_games(conn, model_version="v3")
+    assert result == []

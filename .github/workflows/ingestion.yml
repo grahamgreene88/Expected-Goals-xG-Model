@@ -1,0 +1,31 @@
+name: Nightly Ingestion
+
+on:
+  schedule:
+    - cron: '0 9 * * *'  # 4:00 AM ET = 09:00 UTC (adjust for DST — see note below)
+  workflow_dispatch: {}  # lets you trigger manually from the Actions tab too
+
+jobs:
+  run-ingestion:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run nightly ingestion flow
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_SSLMODE: ${{ secrets.DB_SSLMODE }}
+          PREFECT_API_KEY: ${{ secrets.PREFECT_API_KEY }}
+          PREFECT_API_URL: ${{ secrets.PREFECT_API_URL }}
+        run: python -m flows.ingestion_flow nightly

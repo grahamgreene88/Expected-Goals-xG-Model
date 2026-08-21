@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
@@ -10,7 +11,7 @@ from pipeline.config import DB_CONFIG, VALID_PIPELINE_STATUSES
 _connection_pool = None
 
 
-def get_connection_pool(minconn: int = 1, maxconn: int = 10):
+def get_connection_pool(minconn: int = 1, maxconn: int = 5):
     global _connection_pool
     if _connection_pool is None:
         _connection_pool = ThreadedConnectionPool(minconn, maxconn, **DB_CONFIG)
@@ -18,9 +19,14 @@ def get_connection_pool(minconn: int = 1, maxconn: int = 10):
 
 
 # Connection
+@contextmanager
 def get_connection():
-    """Create and return a new PostgreSQL connection."""
-    return psycopg2.connect(**DB_CONFIG)
+    """Create and manage new PostgreSQL connection."""
+    conn = psycopg2.connect(**DB_CONFIG)
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 
 # Pipeline Log
@@ -186,3 +192,25 @@ def upsert_shots(shots: list[dict]) -> int:
         conn.commit()
 
     return len(shots)
+
+
+def get_recent_skipped_games(days: int = 3) -> list[int]:
+    """
+    Return game_ids with a 'skipped_in_progress' pipeline_log entry within
+    the last `days` days that have not since succeeded.
+    """
+    query = """
+        SELECT DISTINCT pl1.game_id
+        FROM pipeline_log pl1
+        WHERE pl1.status = 'skipped_in_progress'
+          AND pl1.created_at_et >= (now() AT TIME ZONE 'America/New_York') - INTERVAL '%s days'
+          AND NOT EXISTS (
+              SELECT 1 FROM pipeline_log pl2
+              WHERE pl2.game_id = pl1.game_id
+                AND pl2.status = 'success'
+          )
+    """
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(query, (days,))
+            return [row[0] for row in cur.fetchall()]
