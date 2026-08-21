@@ -1,0 +1,35 @@
+# Version control
+.git/
+.github/
+
+# Local Postgres dev container
+docker-compose.yml
+
+# Env secrets
+.env
+.env.*
+
+# MLflow committed for pipeline use, not needed by the app 
+mlruns/
+mlflow.db
+
+# Code not used by the deployed app
+flows/
+tests/
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+
+# Editor/IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Docs
+README.md
