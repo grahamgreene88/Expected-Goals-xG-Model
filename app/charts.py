@@ -113,8 +113,8 @@ def make_shot_heatmap(df: pd.DataFrame, metric: str = "volume") -> go.Figure:
     heatmap_kwargs = dict(
         x=df["x_coord"],
         y=df["y_coord"],
-        xbins=dict(start=0, end=100, size=2.5),
-        ybins=dict(start=-42.5, end=42.5, size=5),
+        xbins=dict(start=0, end=100, size=5),
+        ybins=dict(start=-42.5, end=42.5, size=8.5),
         opacity=0.75,
         colorscale="YlOrRd",
     )
@@ -216,6 +216,41 @@ def make_feature_importance_chart(df: pd.DataFrame, top_n: int = 15) -> go.Figur
     return fig
 
 
+def make_team_xg_pct_trend_chart(df: pd.DataFrame) -> go.Figure:
+    """
+    Plots a single team's xG% across seasons.
+    Expects df filtered to one team already, sorted by season, with
+    columns: season, xGF_pct
+    """
+    df = df.sort_values("season")
+
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Scatter(
+            x=df["season"],
+            y=df["xGF_pct"] * 100,
+            mode="lines+markers",
+            name="xGF%",
+            line=dict(color="crimson"),
+        )
+    )
+
+    fig.add_hline(
+        y=50,
+        line=dict(color="gray", dash="dot"),
+        annotation_text="50%",
+        annotation_position="bottom right",
+    )
+
+    fig.update_layout(
+        xaxis=dict(title="Season", type="category"),
+        yaxis=dict(title="xGF%", range=[40, 60]),
+        height=450,
+    )
+    return fig
+
+
 def make_team_trend_chart(df: pd.DataFrame) -> go.Figure:
     """
     Plots a single team's GF/xGF and GA/xGA across seasons.
@@ -265,6 +300,7 @@ def make_team_trend_chart(df: pd.DataFrame) -> go.Figure:
 
     fig.update_layout(
         xaxis_title="Season",
+        xaxis=dict(type="category"),
         yaxis_title="Goals",
         height=450,
         legend=dict(orientation="h", yanchor="bottom", y=1.02),
