@@ -1,6 +1,10 @@
 import streamlit as st
 
-from app.charts import make_team_trend_chart, make_xgf_pct_ranking_chart
+from app.charts import (
+    make_team_trend_chart,
+    make_team_xg_pct_trend_chart,
+    make_xgf_pct_ranking_chart,
+)
 from app.data_access import (
     get_available_seasons,
     get_available_teams,
@@ -22,7 +26,8 @@ with tab1:
         st.info("No data available for this team.")
     else:
         latest = team_df.sort_values("season").iloc[-1]
-        st.metric("Current xGF%", f"{latest['xGF_pct']:.1%}")
+        st.metric("Current season xGF%:", f"{latest['xGF_pct']:.1%}")
+        st.plotly_chart(make_team_xg_pct_trend_chart(team_df), use_container_width=True)
         st.plotly_chart(make_team_trend_chart(team_df), use_container_width=True)
 
 with tab2:

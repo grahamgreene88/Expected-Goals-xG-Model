@@ -13,14 +13,19 @@ def render_season_team_filters(key_prefix: str) -> tuple[str | None, str | None]
     seasons = get_available_seasons()
     teams = get_available_teams()  # unfiltered — independent of season
 
+    season_options = ["All"] + seasons
+    team_options = ["All"] + teams
+
     season = st.sidebar.selectbox(
         "Season",
-        options=["All"] + seasons,
+        options=season_options,
+        index=season_options.index(seasons[-1]),
         key=f"{key_prefix}_season",
     )
     team = st.sidebar.selectbox(
         "Team",
-        options=["All"] + teams,
+        options=team_options,
+        index=team_options.index(teams[0]),
         key=f"{key_prefix}_team",
     )
 
