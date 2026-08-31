@@ -18,12 +18,9 @@ st.set_page_config(
 st.title("🏒 NHL Expected Goals (xG) Explorer")
 
 st.markdown("""
-    An expected-goals model trained on NHL shot data (2019-20 through 2025-26),
-    using shot geometry, game state, and shot type to estimate the probability
+    An expected-goals model trained on NHL shot data (seasons 2019-20 through 2024-25),
+    using features like shot position, shot type, game state and others to estimate the probability
     that a given shot results in a goal.
-
-    Use the pages in the sidebar to explore shots, compare teams, look up
-    players, or inspect the model's performance and calibration.
     """)
 
 st.divider()
@@ -40,8 +37,8 @@ st.divider()
 
 st.markdown("""
     **Pages**
-    - **Shot Explorer** — filter and visualize shots on a rink diagram
+    - **Shot Explorer** — visualize shots based on volume or average xG on a rink diagram; filter by shot type
+    - **Model Performance** — performance metrics, calibration curve and feature importance charts
     - **Team Trends** — xG vs. actual goals over time, by team
-    - **Player Lookup** — individual skater xG profile
-    - **Model Performance** — calibration curve and feature importance
+    - **COMING SOON: Player Lookup** — individual skater xG profile
     """)
