@@ -16,7 +16,7 @@ MAX_PLOT_POINTS = 5000
 
 st.title("Shot Explorer")
 st.markdown(
-    "Explore individual shots colored by expected goal (xG) value. "
+    "Explore shot heatmaps colored by shot volume or average expected goal (xG) value. "
     "Use the sidebar to filter by season and team."
 )
 
