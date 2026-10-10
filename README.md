@@ -6,7 +6,7 @@ hands-on project in production ML engineering practices — from raw data
 ingestion through model training to a deployed, automatically-updating
 analytics app.
 
-**Live app:** [link once deployed]
+**Live app:** [https://xg-web-app.onrender.com]
 **Model:** XGBoost classifier, tracked and versioned via MLflow
 
 ---
@@ -52,9 +52,10 @@ workflow orchestration, CI, and cloud deployment.
 - Batch inference over unscored games (`model/predict.py`,
   `model/batch_predict.py`), writing results to `scored_shots` and
   `scored_games_log`
-- Experiment tracking and model registry via **MLflow**; the production
-  model is referenced via a registry alias
-  (`models:/nhl_xg_xgboost@production`)
+- Experiment tracking and model registry via **MLflow**, used locally
+  during development. The model version holding the `production` alias
+  is exported to `production_model/` and committed; batch inference
+  loads it from that repo-relative path
 
 ### App
 - Built with **Streamlit** + **Plotly**
@@ -71,7 +72,7 @@ workflow orchestration, CI, and cloud deployment.
     of ingestion (via `workflow_run`), scoring any newly-ingested games
 - **PostgreSQL** is hosted on Aiven (migrated from local Docker for
   development)
-- **Streamlit Community Cloud** hosts the deployed app
+- **Render** hosts the deployed app
 
 This design deliberately separates scheduling/execution (GitHub Actions)
 from flow structure/observability (Prefect) — see
@@ -105,19 +106,26 @@ makes, just made visible.
 
 ### MLflow is not deployed as a remote service
 
-MLflow's tracking store and model registry (`mlruns/` and `mlflow.db`)
-are **committed directly to this repository** rather than hosted on a
-remote tracking server or object store. This was a deliberate choice to
-unblock CI/CD (GitHub Actions runners need to resolve the production
-model, and they don't have access to a local filesystem) without taking
-on the added infrastructure of a hosted MLflow server or a cloud
-artifact store.
+MLflow is mainly used for local experiment tracking and registry 
+management during model development.
 
-MLflow is genuinely used for local experiment tracking and registry 
-management during model development — but the deployed pipeline is 
-really just reading a static, versioned snapshot of that registry, 
-not talking to a live MLflow service. Promoting a new model version 
-currently requires committing the updated local store.
+MLflow's tracking store and model registry (`mlruns/` and `mlflow.db`)
+run locally rather than on a remote tracking server or object store. A
+locally written registry records artifact locations as absolute paths,
+so it cannot be resolved on another machine such as a GitHub Actions
+runner.
+
+Batch inference therefore does not read the registry. Promoting a model
+is a manual, local procedure:
+
+1. Assign the `production` alias to the model version in the local registry.
+2. Run `python -m model.export_model`, which copies that version's files
+   to `production_model/model/` and writes its version label and run ID
+   to `production_model/model_version.json`.
+3. Commit `production_model/`.
+
+`mlruns/` and `mlflow.db` remain committed as an off-machine backup of
+experiment history; nothing in the deployed pipeline reads them.
 
 ### Training/test split does not use out-of-fold predictions
 

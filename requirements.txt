@@ -6,7 +6,8 @@ python-dotenv
 pytest
 numpy
 scikit-learn==1.7.2
-xgboost
+xgboost==3.2.0
+skops==0.14.0
 plotly==6.3.1
 streamlit==1.61.1
 mlflow==3.15.1
