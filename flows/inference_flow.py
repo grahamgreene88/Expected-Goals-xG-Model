@@ -4,11 +4,8 @@ from model.batch_predict import (
     get_unscored_games,
     score_and_persist_games,
 )
-from model.mlflow_helpers import get_production_model_version
+from model.predict import get_production_model_version
 from pipeline.db import get_connection
-
-# Obtain model version to put in scored_shots table
-MODEL_NAME = "nhl_xg_xgboost"
 
 
 @task
@@ -26,7 +23,7 @@ def predict_shots_batch(game_ids, model_version: str) -> int:
 @flow(name="batch-inference-shots")
 def batch_predict_flow(model_version: str | None = None):
     logger = get_run_logger()
-    model_version = model_version or get_production_model_version(MODEL_NAME)
+    model_version = model_version or get_production_model_version()
 
     game_ids = find_unscored_games(model_version)
     count = predict_shots_batch(game_ids, model_version)

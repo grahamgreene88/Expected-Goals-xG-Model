@@ -13,6 +13,8 @@ Usage:
     scored_df = score_shots(raw_df)
 """
 
+import json
+from pathlib import Path
 from typing import cast
 
 import mlflow.sklearn
@@ -21,14 +23,20 @@ from sklearn.pipeline import Pipeline
 
 from model.features import FEATURE_COLS, build_features
 
-MODEL_URI = "models:/nhl_xg_xgboost@production"
+PRODUCTION_MODEL_DIR = Path(__file__).resolve().parents[1] / "production_model"
+
+
+def get_production_model_version() -> str:
+    """Version label of the exported production model, e.g. 'nhl_xg_xgboost:v3'."""
+    meta = json.loads((PRODUCTION_MODEL_DIR / "model_version.json").read_text())
+    return meta["model_version"]
 
 
 def _load_pipeline() -> Pipeline:
-    """Load the production XGBoost pipeline from MLflow Model Registry."""
+    """Load the exported production pipeline from the repo (no registry access)."""
     return cast(
         Pipeline,
-        mlflow.sklearn.load_model(MODEL_URI),
+        mlflow.sklearn.load_model(str(PRODUCTION_MODEL_DIR / "model")),
     )
 
 
