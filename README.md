@@ -35,9 +35,9 @@ workflow orchestration, CI, and cloud deployment.
 
 ## Architecture
 
-The system has two loops: a manual local loop for training and promoting
-models, and an automated GitHub Actions loop that ingests new games nightly
-and scores them with the committed production model.
+New games flow nightly from the NHL API through ingestion and batch inference (both run on GitHub Actions) into PostgreSQL, where the Streamlit app reads them. The model itself is trained and exported locally, and inference loads the committed production model from the repo.
+
+![Architecture diagram](docs/images/architecture.drawio.svg)
 
 ### Data pipeline
 - Fetches game schedules and play-by-play data from the NHL API
