@@ -35,6 +35,10 @@ workflow orchestration, CI, and cloud deployment.
 
 ## Architecture
 
+The system has two loops: a manual local loop for training and promoting
+models, and an automated GitHub Actions loop that ingests new games nightly
+and scores them with the committed production model.
+
 ### Data pipeline
 - Fetches game schedules and play-by-play data from the NHL API
 - Parses raw play-by-play into shot-level records (location, type, strength
@@ -70,13 +74,11 @@ workflow orchestration, CI, and cloud deployment.
   - `ingestion.yml` runs the nightly ingestion flow on a cron schedule
   - `inference.yml` is triggered automatically on successful completion
     of ingestion (via `workflow_run`), scoring any newly-ingested games
-- **PostgreSQL** is hosted on Aiven (migrated from local Docker for
-  development)
+- **PostgreSQL** is hosted on Aiven in production, Docker Compose locally for development
 - **Render** hosts the deployed app
 
 This design deliberately separates scheduling/execution (GitHub Actions)
-from flow structure/observability (Prefect) — see
-[Design notes](#design-notes) below for why.
+from flow structure/observability (Prefect).
 
 ---
 
@@ -87,11 +89,12 @@ from flow structure/observability (Prefect) — see
 | Data pipeline | Python, `requests`, PostgreSQL |
 | ML | XGBoost, scikit-learn, MLflow |
 | App | Streamlit, Plotly |
-| Orchestration | Prefect 3.x |
-| Scheduling / CI/CD | GitHub Actions |
+| Orchestration, scheduling & CI/CD | GitHub Actions |
+| Containerization | Docker (app image), Docker Compose (local PostgreSQL) |
 | Database hosting | Aiven (PostgreSQL) |
-| App hosting | Streamlit Community Cloud |
-| Testing | pytest, `unittest.mock` |
+| App hosting | Render (Docker deploy) |
+| Testing | pytest, unittest |
+| Environment & dependencies | uv |
 | Linting/formatting | ruff, black |
 | Security scanning | CodeQL |
 
@@ -141,10 +144,9 @@ was trained on. These values are optimistic relative to what the model
 would predict on truly unseen data from those same seasons, since the
 model has already learned from them directly.
 
-The correct way to train to account for this would be using **out-of-fold (OOF) predictions**.
-This involves k-fold cross-validation where each shot is only ever scored by a
-model that did not see it during training, then aggregating those
-per-fold predictions into a single OOF xG value per training-season shot.
+The correct way to produce historical xG values would be using **out-of-fold (OOF) predictions**:
+k-fold cross-validation where each training-season shot is scored only by a model that never saw it.
+Folds would need to be grouped by season rather than split randomly by shot. Shots in the same game share context (goalie, score state, rebound sequences), so a random split would leak information across folds and inflate the OOF values.
 
 ---
 
